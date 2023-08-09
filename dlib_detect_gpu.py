@@ -27,7 +27,7 @@ def keypoint(target_folder_path, faces_folder_path):
     descriptors = []  # 存放训练集人物特征列表
 
     # 人脸检测器
-    detector = dlib.get_frontal_face_detector()  # 正脸检测
+    detector = dlib.get_frontal_face_detector()  # 正脸检测器（detector）用于在图像中检测出人脸的位置。它会定位出图像中可能存在的人脸区域，并返回这些区域的位置信息（通常是矩形框）
     sp = dlib.shape_predictor(predictor_path)
 
     # 读取训练图像并提取特征
@@ -40,7 +40,9 @@ def keypoint(target_folder_path, faces_folder_path):
 
         for k, d in enumerate(dets):
             shape = sp(img, d)
-            # 调整图像尺寸为224x224，并将numpy数组转换为torch.Tensor
+            # 使用 sp(img, d) 计算出人脸的关键点（特征点）。然后，它将图像转换为大小为 (1, 3, 224, 224) 的 torch 张量，
+            # 通过对图像应用一系列的变换（调整大小为 224x224）。
+            # 并将numpy数组转换为torch.Tensor
             transform = transforms.Compose([transforms.ToPILImage(), transforms.Resize((224, 224)), transforms.ToTensor()])
             img_tensor = transform(img).unsqueeze(0).to(device)
             # 人脸特征提取
@@ -100,6 +102,6 @@ def keypoint(target_folder_path, faces_folder_path):
 
 if __name__ == "__main__":
     # 替换为你的目标文件夹和训练集文件夹路径
-    target_folder = r'C:\Users\19528\Desktop\img\target'
-    train_folder = r'C:\Users\19528\data\face_detect'
+    target_folder = r"C:\Users\19528\Desktop\img\target"
+    train_folder = r"C:\Users\19528\data\face_detect"
     keypoint(target_folder, train_folder)

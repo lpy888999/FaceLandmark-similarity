@@ -99,6 +99,7 @@ def merge_and_calculate_average(dict1, dict2, normalized_values1, normalized_val
 
     return merged_dict
 
+
 def write_merged_data_to_csv(merged_dict, output_file):
     with open(output_file, 'w', newline='') as csvfile:
         writer = csv.writer(csvfile)
@@ -107,7 +108,7 @@ def write_merged_data_to_csv(merged_dict, output_file):
             writer.writerow([filename, avg_distance])
 
 # if __name__ == "__main__":
-#     file1 = "result.csv"
+#     file1 = "luoyunxi.csv"
 #     file2 = "result1.csv"
 #     output_file = "merged_file.csv"
 #
