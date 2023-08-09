@@ -9,14 +9,13 @@ from torchvision import transforms
 from scipy.spatial import procrustes
 from torch.nn import Sequential, ReLU
 from torch.autograd import Variable
+import shutil
 
 
 def keypoint(target_folder_path, faces_folder_path):
+
     # 人脸关键点检测器
     predictor_path = "shape_predictor_68_face_landmarks.dat"
-    # # 训练图像文件夹
-    # faces_folder_path = r'C:\Users\19528\data\face_detect'
-    # target_folder_path = r'C:\Users\19528\Desktop\img\target'
 
     # 使用预训练的dlib模型作为人脸识别模型，并移动到GPU上
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -67,6 +66,13 @@ def keypoint(target_folder_path, faces_folder_path):
         transform = transforms.Compose([transforms.ToPILImage(), transforms.Resize((224, 224)), transforms.ToTensor()])
         img_tensor = transform(img).unsqueeze(0).to(device)
 
+        if len(dets) == 0:   # 没检测到人脸
+            print('Skipping image with 0 detected faces:', f1)
+            continue
+        if len(dets) >= 2:   # 检测到两张及以上人脸
+            print('Skipping image with 2 detected faces:', f1)
+            continue
+
         dist = []
         for k, d in enumerate(dets):
             shape = sp(img, d)
@@ -83,25 +89,66 @@ def keypoint(target_folder_path, faces_folder_path):
         # 训练集人物和距离组成一个字典
         c_d = dict(zip(candidate, dist))
         cd_sorted = sorted(c_d.items(), key=lambda d: d[1])  # sorted返回元组列表
+
         # print("识别到的人物最有可能是: ", cd_sorted[0][0])
         # for key, value in cd_sorted:
         #     print(f"Key: {key}, Value: {value}")
-        cd_sorted = np.array(cd_sorted)
-        distances = cd_sorted[:, 1].astype(float)
-        average_distance = distances.mean()
-        print(f"Average distance: {average_distance}")
 
+        cd_sorted = np.array(cd_sorted)
+        print("Shape of cd_sorted:", cd_sorted.shape)
+        distances = cd_sorted[:, 1].astype(float)
+
+        # 平均距离方法
+        # average_distance = distances.mean()
+        # print(f"Average distance: {average_distance}")
+
+        # 保留最像法
+        min_distance = min(distances)
+        print(f"min distance: {min_distance}")
         # 保存每张图片的平均距离
-        target[f1.split('\\')[-1]] = average_distance
+        # target[f1.split('\\')[-1]] = average_distance
+        target[f1.split('\\')[-1]] = min_distance
 
     # 输出每张的平均距离保存到csv
     target_sorted = sorted(target.items(), key=lambda d: d[1])  # sorted返回元组列表 将字典转换为包含元组的列表
-    df = pd.DataFrame(target_sorted, columns=['图片', '平均距离'])  # 创建带有列名的DataFrame
+    df = pd.DataFrame(target_sorted, columns=['图片', '距离'])  # 创建带有列名的DataFrame
     df.to_csv('result.csv', index=False)
+    return target_sorted
 
+
+def copy_top_images(csv_file_path, source_images_folder, destination_folder, num_images=40):
+    # Load the CSV file into a DataFrame
+    df = pd.read_csv(csv_file_path)
+
+    # Sort DataFrame by the values in the second column and select top num_images rows
+    top_images = df.sort_values(by=df.columns[1])[:num_images]
+
+    # Create the destination folder if it doesn't exist
+    os.makedirs(destination_folder, exist_ok=True)
+
+    # Copy the selected images to the destination folder
+    for index, row in top_images.iterrows():
+        image_name = row[df.columns[0]]
+        source_path = os.path.join(source_images_folder, image_name)
+        destination_path = os.path.join(destination_folder, image_name)
+        shutil.copy(source_path, destination_path)
+        print(f"Image {image_name} copied to {destination_folder}")
+
+if __name__ == "__main1__":
+    # 替换为你的目标文件夹和训练集文件夹路径
+    target_folder = r"C:\Users\19528\Desktop\img\luoyunxi2"
+    # target_folder = r"C:\Users\19528\Desktop\img\luoyunxi_new"
+    # train_folder = r"C:\Users\19528\data\10_luoyungxi(1)\10_luoyungxi"
+    train_folder = r"C:\Users\19528\data\10_luoyungxi(1)\test"
+    keypoint(target_folder, train_folder)
 
 if __name__ == "__main__":
-    # 替换为你的目标文件夹和训练集文件夹路径
-    target_folder = r"C:\Users\19528\Desktop\img\target"
-    train_folder = r"C:\Users\19528\data\face_detect"
-    keypoint(target_folder, train_folder)
+    csv_file_path = r"result.csv"
+    source_images_folder = r"C:\Users\19528\Desktop\img\luoyunxi2"
+    destination_folder = r"C:\Users\19528\Desktop\img\luoyunxi3"
+    num_images = 40
+    copy_top_images(csv_file_path, source_images_folder, destination_folder, num_images)
+
+
+
+
