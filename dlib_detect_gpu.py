@@ -15,12 +15,12 @@ import shutil
 def keypoint(target_folder_path, faces_folder_path):
 
     # 人脸关键点检测器
-    predictor_path = "shape_predictor_68_face_landmarks.dat"
+    predictor_path = "models/shape_predictor_68_face_landmarks.dat"
 
     # 使用预训练的dlib模型作为人脸识别模型，并移动到GPU上
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print("当前使用的设备：", device)
-    facerec = dlib.face_recognition_model_v1("dlib_face_recognition_resnet_model_v1.dat")
+    facerec = dlib.face_recognition_model_v1("models/dlib_face_recognition_resnet_model_v1.dat")
 
     candidate = []  # 存放训练集人物名字/图片名称
     descriptors = []  # 存放训练集人物特征列表
@@ -136,17 +136,17 @@ def copy_top_images(csv_file_path, source_images_folder, destination_folder, num
 
 if __name__ == "__main1__":
     # 替换为你的目标文件夹和训练集文件夹路径
-    target_folder = r"C:\Users\19528\Desktop\img\luoyunxi2"
+    target_folder = r"C:\Users\19528\PycharmProjects\SDapi\images\lixian"
     # target_folder = r"C:\Users\19528\Desktop\img\luoyunxi_new"
     # train_folder = r"C:\Users\19528\data\10_luoyungxi(1)\10_luoyungxi"
-    train_folder = r"C:\Users\19528\data\10_luoyungxi(1)\test"
+    train_folder = r"C:\Users\19528\data\face_detect"
     keypoint(target_folder, train_folder)
 
 if __name__ == "__main__":
-    csv_file_path = r"result.csv"
-    source_images_folder = r"C:\Users\19528\Desktop\img\luoyunxi2"
-    destination_folder = r"C:\Users\19528\Desktop\img\luoyunxi3"
-    num_images = 40
+    csv_file_path = r"results/result.csv"
+    source_images_folder = r"C:\Users\19528\PycharmProjects\SDapi\images\lixian"
+    destination_folder = r"C:\Users\19528\Desktop\img\lixian_48"
+    num_images = 48
     copy_top_images(csv_file_path, source_images_folder, destination_folder, num_images)
 
 

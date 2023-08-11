@@ -67,56 +67,57 @@ def canny_similarity(img1, img2):
 
     return similarity
 
+def preprocess_image(image):
+    # Preprocess the image if needed
+    # Resize the image to a fixed size (e.g., 64x128)
+    processed_image = cv2.resize(image, (64, 128))
+    return processed_image
 
-if __name__ == "__main1__":
+
+if __name__ == "__main__":
     train_folder = r"C:\Users\19528\data\face_detect"
     target_folder = r"C:\Users\19528\Desktop\img\lixian1_40"
     output_csv = 'similarity_results.csv'
     face_cascade = cv2.CascadeClassifier('models/haarcascade_frontalface_default.xml')
 
-    # Iterate through target folder to calculate similarities
+    # Preprocess training images and store them
+    train_images = []
+    for train_filename in os.listdir(train_folder):
+        train_image = cv2.imread(os.path.join(train_folder, train_filename), cv2.IMREAD_GRAYSCALE)
+        faces = face_cascade.detectMultiScale(train_image, scaleFactor=1.1, minNeighbors=5)
+
+        if len(faces) > 0:
+            x, y, w, h = faces[0]
+            face = preprocess_image(train_image[y:y + h, x:x + w])
+            train_images.append((train_filename, face))
+
+    # Calculate similarities using preprocessed images
     with open(output_csv, 'w', newline='') as csvfile:
         csv_writer = csv.writer(csvfile)
         csv_writer.writerow(['Target', 'Max_LBP', 'Max_HOG', 'Max_SIFT', 'Max_Canny'])
 
         for target_filename in os.listdir(target_folder):
             target_image = cv2.imread(os.path.join(target_folder, target_filename), cv2.IMREAD_GRAYSCALE)
-            # Preprocess target_image if needed
+            target_faces = face_cascade.detectMultiScale(target_image, scaleFactor=1.1, minNeighbors=5)
 
-            max_lbp_sim, max_hog_sim, max_sift_sim, max_canny_sim = -1, -1, -1, -1
+            if len(target_faces) > 0:
+                x, y, w, h = target_faces[0]
+                target_face = preprocess_image(target_image[y:y + h, x:x + w])
 
-            for train_filename in os.listdir(train_folder):
-                train_image = cv2.imread(os.path.join(train_folder, train_filename), cv2.IMREAD_GRAYSCALE)
+                max_lbp_sim, max_hog_sim, max_sift_sim, max_canny_sim = -1, -1, -1, -1
 
-                # 检测出人脸部分
-                faces1 = face_cascade.detectMultiScale(train_image, scaleFactor=1.1, minNeighbors=5)
-                faces2 = face_cascade.detectMultiScale(target_image, scaleFactor=1.1, minNeighbors=5)
+                for _, train_face in train_images:
+                    lbp_sim = lbp_similarity(train_face, target_face)
+                    hog_sim = hog_similarity(train_face, target_face)
+                    sift_sim = sift_similarity(train_face, target_face)
+                    canny_sim = canny_similarity(train_face, target_face)
 
-                if len(faces1) > 0 and len(faces2) > 0:
-                    x1, y1, w1, h1 = faces1[0]
-                    x2, y2, w2, h2 = faces2[0]
+                    max_lbp_sim = max(max_lbp_sim, lbp_sim)
+                    max_hog_sim = max(max_hog_sim, hog_sim)
+                    max_sift_sim = max(max_sift_sim, sift_sim)
+                    max_canny_sim = max(max_canny_sim, canny_sim)
 
-                    # Extract and resize the faces
-                    face1 = train_image[y1:y1 + h1, x1:x1 + w1]
-                    face2 = target_image[y2:y2 + h2, x2:x2 + w2]
-
-                    # Resize the faces to the same size
-                    face1 = cv2.resize(face1, (64, 128))  # Adjust the size according needs
-                    face2 = cv2.resize(face2, (64, 128))
-
-                print(train_filename, target_filename)
-                lbp_sim = lbp_similarity(face1, face2)
-                hog_sim = hog_similarity(face1, face2)
-                sift_sim = sift_similarity(face1, face2)
-                canny_sim = canny_similarity(face1, face2)
-
-                max_lbp_sim = max(max_lbp_sim, lbp_sim)
-                max_hog_sim = max(max_hog_sim, hog_sim)
-                max_sift_sim = max(max_sift_sim, sift_sim)
-                max_canny_sim = max(max_canny_sim, canny_sim)
-
-            csv_writer.writerow([target_filename, max_lbp_sim, max_hog_sim, max_sift_sim, max_canny_sim])
-
+                csv_writer.writerow([target_filename, max_lbp_sim, max_hog_sim, max_sift_sim, max_canny_sim])
 
 if __name__ == "__main1__":
     face_cascade = cv2.CascadeClassifier('models/haarcascade_frontalface_default.xml')
